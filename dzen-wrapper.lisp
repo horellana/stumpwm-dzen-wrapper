@@ -1,62 +1,77 @@
 (in-package :stumpwm)
 
-(defvar *root-window* (first (xlib:display-roots (xlib:open-display ""))))
+;; (defvar *root-window* (first (xlib:display-roots (xlib:open-display ""))))
 
-(defvar *dzen-background-color* "#000")
-(defvar *dzen-foreground-color* "#fff")
-(defvar *dzen-timeout* 5)
-(defvar *dzen-alignment* :left)
-(defvar *dzen-position* :bottom)
-(defvar *dzen-format* nil)
+(defvar *dzen-script* nil)
 
-(defvar *dzen-timer* nil)
+(let (dzen-pid
+      dzen-visible-p)
 
-(defun dzen-calc-position ()
-  (case *dzen-position*
-    (:bottom (format nil "-y ~A" (- (xlib:screen-height *root-window*) 18)))
-    (:top nil)))
+  (defcommand show-dzen () ()
+    (if dzen-visible-p
+        (progn
+          (resize-head 0 0 0 1366 768)
+          (setf dzen-visible-p nil))
+        (progn
+          (resize-head 0 0 15 1366 753)
+          (setf dzen-visible-p t))))
 
-(defun interpret-dzen-format (fmt-list)
-  (string-trim '(#\Newline)
-               (case (first fmt-list)
-                 (:exec (run-shell-command (second fmt-list) t))
-                 (:func (format nil "~A" (funcall (second fmt-list))))
-                 (:str (second fmt-list)))))
+  )
 
-(defun dzen-build-config-string (&key temp)
-  (format nil "~@[~A~] ~@[~A~] ~@[~A~] ~@[~A~]"
-          (format nil "-p ~A" (if temp temp ""))
-          (dzen-calc-position)
-          (case *dzen-alignment* (:left "-ta l") (:center "-ta c") (:right "-ta r"))
-          (when *dzen-background-color* (format nil "-bg \"~A\"" *dzen-background-color*))))
 
-(defun start-dzen ()
-  "Runs dzen2"
-  (run-shell-command
-   (format nil "print ~{~A ~} | dzen2 ~A"
-           (remove-if #'null (mapcar #'interpret-dzen-format *dzen-format*))
-           (dzen-build-config-string))))
 
-(defun stop-dzen ()
-  (run-shell-command "pkill dzen"))
+;; (defvar *dzen-background-color* "#000")
+;; (defvar *dzen-foreground-color* "#fff")
+;; (defvar *dzen-timeout* 5)
+;; (defvar *dzen-alignment* :left)
+;; (defvar *dzen-position* :bottom)
+;; (defvar *dzen-format* nil)
 
-(let (current-dzen
-      next-dzen)
-  (labels ((update-dzen ()
-             (progn
-               (setf next-dzen (start-dzen))
-               (run-shell-command "pkill ~A"
-                                  #+sbcl (sb-ext::process-pid current-dzen))
-               (setf current-dzen next-dzen))))
+;; (defvar *dzen-timer* nil)
 
-    (defcommand dzen () ()
-      "If dzen is not running this command wil start it and also set up a timer to update it,
-else it will kill dzen and clean up its timer"
-      (if *dzen-timer*
-          (progn
-            (cancel-timer *dzen-timer*)
-            (setf *dzen-timer* nil)
-            (run-shell-command "pkill dzen"))
-          (setf *dzen-timer*
-                  (run-with-timer 1 *dzen-timeout* #'update-dzen))))))
+;; (defun dzen-calc-position ()
+;;   (case *dzen-position*
+;;     (:bottom (format nil "-y ~A" (- (xlib:screen-height *root-window*) 18)))
+;;     (:top nil)))
 
+;; (defun reserve-screen-space ()
+  
+
+;; (defun interpret-dzen-format ()
+;;   (string-trim '(#\Newline)
+;;                (case (first *dzen-format*)
+;;                  (:exec (run-shell-command (second *dzen-format*) t))
+;;                  (:func (format nil "~A" (funcall (second *dzen-format*))))
+;;                  (:str (second *dzen-format*)))))
+
+;; (defun dzen-build-config-string (&key temp)
+;;   (format nil "~@[~A~] ~@[~A~] ~@[~A~] ~@[~A~]"
+;;           (format nil "-p ~A" (if temp temp ""))
+;;           (dzen-calc-position)
+;;           (case *dzen-alignment* (:left "-ta l") (:center "-ta c") (:right "-ta r"))
+;;           (when *dzen-background-color* (format nil "-bg \"~A\"" *dzen-background-color*))))
+
+
+;; ;; Code from: https://github.com/acieroid/dotfiles/blob/master/stumpwm.d/dzen.lisp
+;; (let (dzen-proc)
+;;   (defun start-dzen ()
+;;     (setf dzen-proc (sb-ext:run-program "dzen2" (split-string (dzen-build-config-string))
+;;                                         :input :stream
+;;                                         :wait nil
+;;                                         :search t))
+;;     (sb-thread:make-thread
+;;      #'(lambda ()
+;;          (with-open-stream (input (sb-ext:process-input dzen-proc))
+;;            (loop while (sb-ext:process-alive-p dzen-proc) do
+;;                 (format input (interpret-dzen-format))
+;;                 (sleep *dzen-timeout*))))))
+  
+;;   (defun stop-dzen ()
+;;     (when dzen-proc
+;;       (sb-ext:process-kill dzen-proc 15)
+;;       (close (sb-ext:process-input dzen-proc))
+;;       (setf dzen-proc nil))))
+      
+;; (let (dzen-proc)
+;;   (defcomman dzen () ()
+;;              (setf dzen-proc (start-dzen)
