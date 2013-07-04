@@ -4,25 +4,20 @@
 
 (defvar *dzen-script* nil)
 
-(let (dzen-pid
-      dzen-visible-p)
+(defvar dzen-pid nil)
+(defvar dzen-visible-p nil)
 
-  (defcommand show-dzen () ()
-    (if dzen-visible-p
-        (progn
-          (resize-head 0 0 0 1366 768)
-          (setf dzen-visible-p nil))
-        (progn
-          (resize-head 0 0 15 1366 753)
-          (setf dzen-visible-p t))))
+(defcommand show-dzen () ()
+  (mode-line))
 
-  (defcommand start-dzen () ()
-    (setf dzen-pid (cl-user::process-pid (run-shell-command *dzen-script*))))
+(defcommand start-dzen () ()
+  (setf dzen-pid (cl-user::process-pid (run-shell-command *dzen-script*))))
 
-  (defcommand stop-dzen () ()
-    (run-shell-command (format nil "pkill ~A" dzen-pid))
-    (setf dzen-pid nil))
+(defcommand stop-dzen () ()
+  (run-shell-command (format nil "pkill ~A" (file-namestring *dzen-script*)))
+  (setf dzen-pid nil))
 
-  (defcommand toggle-dzen () ()
-    (if dzen-pid (stop-dzen) (start-dzen))
-    (show-dzen)))
+(defcommand toggle-dzen () ()
+  (show-dzen)
+  (if dzen-pid (stop-dzen) (start-dzen)))
+
